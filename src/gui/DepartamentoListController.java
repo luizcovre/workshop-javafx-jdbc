@@ -50,7 +50,7 @@ public class DepartamentoListController implements Initializable, DataChangeList
 
 	@FXML
 	private TableColumn<Departamento, Departamento> tableColumnRemove;
-	
+
 	@FXML
 	private Button btNovo;
 
@@ -140,10 +140,10 @@ public class DepartamentoListController implements Initializable, DataChangeList
 			}
 		});
 	}
-	
+
 	private void initRemoveButtons() {
-		tableColumnEdit.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue()));
-		tableColumnEdit.setCellFactory(param -> new TableCell<Departamento, Departamento>() {
+		tableColumnRemove.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue()));
+		tableColumnRemove.setCellFactory(param -> new TableCell<Departamento, Departamento>() {
 			private final Button button = new Button("remove");
 
 			@Override
@@ -162,8 +162,8 @@ public class DepartamentoListController implements Initializable, DataChangeList
 	}
 
 	private void removeEntity(Departamento obj) {
-		Optional<ButtonType> result =  Alerts.showConfirmation("Confirmação", "Tem certeza que vai deletar?");
-		
+		Optional<ButtonType> result = Alerts.showConfirmation("Confirmação", "Tem certeza que vai deletar?");
+
 		if (result.get() == ButtonType.OK) {
 			if (service == null) {
 				throw new IllegalStateException("service está null");
@@ -171,8 +171,7 @@ public class DepartamentoListController implements Initializable, DataChangeList
 			try {
 				service.remove(obj);
 				updateTableView();
-			}
-			catch (DbIntegrityException e) {
+			} catch (DbIntegrityException e) {
 				Alerts.showAlerts("Erro removendo objeto", null, e.getMessage(), AlertType.ERROR);
 			}
 		}
