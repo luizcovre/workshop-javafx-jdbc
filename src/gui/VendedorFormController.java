@@ -15,71 +15,87 @@ import gui.listeners.DataChangeListener;
 import gui.util.Alerts;
 import gui.util.Constraints;
 import gui.util.Utils;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.util.Callback;
+import model.entities.Departamento;
 import model.entities.Vendedor;
 import model.exceptions.ValidationException;
+import model.services.DepartamentoService;
 import model.services.VendedorService;
 
 public class VendedorFormController implements Initializable {
 
 	private Vendedor entity;
-	
+
 	private VendedorService service;
-	
+
+	private DepartamentoService departamentoService;
+
 	private List<DataChangeListener> dataChangeListeners = new ArrayList<>();
-	
+
 	@FXML
 	private TextField txtId;
-	
+
 	@FXML
 	private TextField txtName;
-	
+
 	@FXML
 	private TextField txtEmail;
-	
+
 	@FXML
 	private TextField txtBaseSalary;
-	
+
 	@FXML
 	private DatePicker dpBirthDate;
-	
+
+	@FXML
+	private ComboBox<Departamento> comboBoxDepartamento;
+
 	@FXML
 	private Label labelErrorName;
-	
+
 	@FXML
 	private Label labelErrorEmail;
-	
+
 	@FXML
 	private Label labelErrorBirthDate;
-	
+
 	@FXML
 	private Label labelErrorBaseSalary;
-	
+
 	@FXML
 	private Button btSave;
-	
+
 	@FXML
 	private Button btCancel;
-	
+
+	private ObservableList<Departamento> obsList;
+
 	public void setVendedor(Vendedor entity) {
 		this.entity = entity;
 	}
-	
-	public void setVendedorService(VendedorService service) {
+
+	public void setServices(VendedorService service, DepartamentoService departamentoService) {
 		this.service = service;
+		this.departamentoService = departamentoService;
 	}
-	
+
 	public void subscribeDataChangeListener(DataChangeListener listener) {
 		dataChangeListeners.add(listener);
 	}
-	
+
 	@FXML
 	public void onBtSaveAction(ActionEvent event) {
 		if (entity == null) {
@@ -93,16 +109,14 @@ public class VendedorFormController implements Initializable {
 			service.saveOrUpdate(entity);
 			notifyDataChangeListeners();
 			Utils.currentStage(event).close();
-		}
-		catch (ValidationException e) {
+		} catch (ValidationException e) {
 			setErrorMessages(e.getErrors());
-		}
-		catch (DbException e) {
+		} catch (DbException e) {
 			Alerts.showAlerts("Erro salvando obj", null, e.getMessage(), AlertType.ERROR);
 		}
-		
+
 	}
-	
+
 	private void notifyDataChangeListeners() {
 		for (DataChangeListener listener : dataChangeListeners) {
 			listener.onDataChanged();
@@ -111,20 +125,20 @@ public class VendedorFormController implements Initializable {
 
 	private Vendedor getFormData() {
 		Vendedor obj = new Vendedor();
-		
+
 		ValidationException exception = new ValidationException("Validation error");
-		
+
 		obj.setId(Utils.tryParseToInt(txtId.getText()));
-		
+
 		if (txtName.getText() == null || txtName.getText().trim().equals("")) {
 			exception.addError("name", "campo não pode estar vazio");
 		}
 		obj.setName(txtName.getText());
-		
+
 		if (exception.getErrors().size() > 0) {
 			throw exception;
 		}
-		
+
 		return obj;
 	}
 
@@ -132,7 +146,7 @@ public class VendedorFormController implements Initializable {
 	public void onBtCancelAction(ActionEvent event) {
 		Utils.currentStage(event).close();
 	}
-	
+
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
 		initializeNodes();
@@ -144,8 +158,10 @@ public class VendedorFormController implements Initializable {
 		Constraints.setTextFieldDouble(txtBaseSalary);
 		Constraints.setTextFieldMaxLength(txtBaseSalary, 60);
 		Utils.formatDatePicker(dpBirthDate, "dd/MM/yyyy");
+		
+		initializeComboBoxDepartamento();
 	}
-	
+
 	public void updateFormData() {
 		if (entity == null) {
 			throw new IllegalStateException("Entity está null");
@@ -158,14 +174,39 @@ public class VendedorFormController implements Initializable {
 		if (entity.getBirthDate() != null) {
 			dpBirthDate.setValue(LocalDate.ofInstant(entity.getBirthDate().toInstant(), ZoneId.systemDefault()));
 		}
+		if (entity.getDepartment() == null) {
+			comboBoxDepartamento.getSelectionModel().selectFirst();
+		}
+		comboBoxDepartamento.setValue(entity.getDepartment());
 	}
-	
+
+	public void loadAssociatedObjects() {
+		if (departamentoService == null) {
+			throw new IllegalStateException("DepartamentoService está null");
+		}
+		List<Departamento> list = departamentoService.findAll();
+		obsList = FXCollections.observableArrayList(list);
+		comboBoxDepartamento.setItems(obsList);
+	}
+
 	private void setErrorMessages(Map<String, String> errors) {
 		Set<String> fields = errors.keySet();
-		
+
 		if (fields.contains("name")) {
 			labelErrorName.setText(errors.get("name"));
 		}
 	}
-	
+
+	private void initializeComboBoxDepartamento() {
+		Callback<ListView<Departamento>, ListCell<Departamento>> factory = lv -> new ListCell<Departamento>() {
+			@Override
+			protected void updateItem(Departamento item, boolean empty) {
+				super.updateItem(item, empty);
+				setText(empty ? "" : item.getName());
+			}
+		};
+		comboBoxDepartamento.setCellFactory(factory);
+		comboBoxDepartamento.setButtonCell(factory.call(null));
+	}
+
 }
