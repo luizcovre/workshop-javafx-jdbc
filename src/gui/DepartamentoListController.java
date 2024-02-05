@@ -48,7 +48,8 @@ public class DepartamentoListController implements Initializable, DataChangeList
 	@FXML
 	private TableColumn<Departamento, Departamento> tableColumnEdit;
 
-	@FXML TableColumn<Departamento, Departamento> tableColumnRemove;
+	@FXML
+	private TableColumn<Departamento, Departamento> tableColumnRemove;
 	
 	@FXML
 	private Button btNovo;
